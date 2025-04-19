@@ -1,3 +1,4 @@
+
 import json, requests, datetime, time, json
 #import matplotlib.pyplot as plt
 #import mplfinance as mpf
@@ -155,11 +156,13 @@ def GenerateChart(chartType, data, startDate, EndDate, stockSymbol, filename):
         chart.add('High', highs)
         chart.add('Low',  lows)
         chart.add('Close', closes)
-        #bar_chart.render_in_browser()
+        #bar_chart.render_in_browser
+
+    os.makedirs(os.path.dirname(filename), exist_ok=True)
 
     #elif chartType == "CANDLESTICK":
 
-        chart.render_to_file(filename)
+    chart.render_to_file(filename)
         
 
         #ohlc_data = [(datetime.datetime.strptime(date, "%Y-%m-%d"), float(values['1. open']), float(values['2. high']), float(values['3. low']), float(values['4. close'])) for date, values in data.items()]
