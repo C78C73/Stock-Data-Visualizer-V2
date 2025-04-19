@@ -1,0 +1,1 @@
+"This is the place the svg's are stored. Also created for Github' format. It doesn't like empty folders.

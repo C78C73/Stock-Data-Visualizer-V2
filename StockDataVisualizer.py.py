@@ -3,69 +3,72 @@ import json, requests, datetime, time, json
 #import mplfinance as mpf
 #import pandas as pd
 import pygal
+import os
 import numpy as np
+from flask import Flask, render_template, url_for, request
+#import redis
 
+
+app = Flask(__name__)
+
+@app.route("/", methods=["GET", "POST"])
 
 def main():
-    #variables
-    apiKey = "WZYK9TQ3C96A9WXT"
+    chart_url = None
 
-    #Ask the user to enter the stock symbol for the company they want data for.
-    while True:
-        stockSymbol = input("\nPlease enter the stock symbol for the company you want data for: ").upper()
-        if (stockSymbol == ""):
-            print("Please enter a valid stock symbol.")
-            continue
-        else:
-            break
-
-    #Ask the user for the chart type they would like.
-    validChartTypes = ["LINE", "BAR"]
-    #validChartTypes = ["LINE", "BAR", "CANDLESTICK"]
-    chartType = input("\nPlease enter the chart type you would like (LINE, BAR): ").upper()
-    #chartType = input("\nPlease enter the chart type you would like (LINE, BAR, CANDLESTICK): ").upper()
-
-    while chartType not in validChartTypes:
-        print("Invalid chart type. Please enter a valid option.")
-        chartType = input("\nPlease enter the chart type you would like (LINE, BAR): ").upper()
-        #chartType = input("\nPlease enter the chart type you would like (LINE, BAR, CANDLESTICK): ").upper()
+    if request.method == "POST":
+        symbol = request.form["symbol"].upper()
+        chart_type = request.form["chart_type"].upper()
+        time_series = request.form["time_series"].upper()
+        start_date = datetime.datetime.strptime(request.form["start_date"], "%Y-%m-%d")
+        end_date = datetime.datetime.strptime(request.form["end_date"], "%Y-%m-%d")
     
-    #Ask the user for the time series function they want the api to use.
-    validTimeSeries = ["INTRADAY", "DAILY", "DAILY_ADJUSTED", "WEEKLY", "WEEKLY_ADJUSTED", "MONTHLY", "MONTHLY_ADJUSTED"]
-    timeSeries = input("\nPlease enter the time series function you would like the api to use (INTRADAY, DAILY, DAILY_ADJUSTED, WEEKLY, WEEKLY_ADJUSTED, MONTHLY, MONTHLY_ADJUSTED): ").upper()
+    # #variables
+        apiKey = "WZYK9TQ3C96A9WXT"
+        filename = f"static/{symbol}_{chart_type}_{time_series}.svg"
 
-    while timeSeries not in validTimeSeries:
-        print("Invalid time series function. Please enter a valid option.")
-        timeSeries = input("\nPlease enter the time series function you would like the api to use (INTRADAY, DAILY, DAILY_ADJUSTED, WEEKLY, WEEKLY_ADJUSTED, MONTHLY, MONTHLY_ADJUSTED): ").upper()    
+        GetData(symbol, apiKey, time_series, start_date, end_date, chart_type, filename)
+
+        chart_url = url_for('static', filename=os.path.basename(filename))
+
+        
+
+    # #Ask the user to enter the stock symbol for the company they want data for.
+    # while True:
+    #     stockSymbol = input("\nPlease enter the stock symbol for the company you want data for: ").upper()
+    #     if (stockSymbol == ""):
+    #         print("Please enter a valid stock symbol.")
+    #         continue
+    #     else:
+    #         break
+
+    # #Ask the user for the chart type they would like.
+    # validChartTypes = ["LINE", "BAR"]
+    # #validChartTypes = ["LINE", "BAR", "CANDLESTICK"]
+    # chartType = input("\nPlease enter the chart type you would like (LINE, BAR): ").upper()
+    # #chartType = input("\nPlease enter the chart type you would like (LINE, BAR, CANDLESTICK): ").upper()
+
+    # while chartType not in validChartTypes:
+    #     print("Invalid chart type. Please enter a valid option.")
+    #     chartType = input("\nPlease enter the chart type you would like (LINE, BAR): ").upper()
+    #     #chartType = input("\nPlease enter the chart type you would like (LINE, BAR, CANDLESTICK): ").upper()
     
+    # #Ask the user for the time series function they want the api to use.
+    # validTimeSeries = ["INTRADAY", "DAILY", "DAILY_ADJUSTED", "WEEKLY", "WEEKLY_ADJUSTED", "MONTHLY", "MONTHLY_ADJUSTED"]
+    # timeSeries = input("\nPlease enter the time series function you would like the api to use (INTRADAY, DAILY, DAILY_ADJUSTED, WEEKLY, WEEKLY_ADJUSTED, MONTHLY, MONTHLY_ADJUSTED): ").upper()
 
-    #NEED TO SEE IF THIS IS EVEN NEEDED (the whole rows thing below), COULD JSUT CALC THE DAYS INBETWEEN START AND END BC THIS IS JUST GONNA DO THAT ANYWAYS
-    # u ask for 5 days in start and end date but then choose 3 for rows then it does the last 3 days not the 5 soo
+    # while timeSeries not in validTimeSeries:
+    #     print("Invalid time series function. Please enter a valid option.")
+    #     timeSeries = input("\nPlease enter the time series function you would like the api to use (INTRADAY, DAILY, DAILY_ADJUSTED, WEEKLY, WEEKLY_ADJUSTED, MONTHLY, MONTHLY_ADJUSTED): ").upper()
+    # #Ask the user for the beginning date in YYYY-MM-DD format.
+    # convertedBeginDate, convertedEndDate = ChoosingDates()
 
-    # asking user how many rows of data they want, how many days of data they want to see
-    #while True:
-     #   try:
-      #      chosenRows = int(input("\nHow many rows of data would you like to see? (1-100): "))
-       #     if (chosenRows < 1 or chosenRows > 100):
-        #        print("Please enter a number between 1 and 100.")
-         #       continue
-          #  else:
-           #     break
-        #except ValueError:
-         #   print("Please enter a valid number.")
-          #  continue
-        #except Exception as e:
-         #   print("An error occurred: ", e)
-
-    #Ask the user for the beginning date in YYYY-MM-DD format.
-    convertedBeginDate, convertedEndDate = ChoosingDates()
-
-    #generating chart
-    GetData(stockSymbol, apiKey, timeSeries, convertedBeginDate, convertedEndDate, chartType)
-
+    # #generating chart
+    # GetData(stockSymbol, apiKey, timeSeries, convertedBeginDate, convertedEndDate, chartType)
+    return render_template("index.html", chart_url=chart_url)
 
 #getting the api data
-def GetData(stockSymbol, apiKey, timeSeries, convertedBeginningDate, convertedEndDate, chartType):
+def GetData(stockSymbol, apiKey, timeSeries, convertedBeginningDate, convertedEndDate, chartType, filename):
     
     #getting the data from the API
     url = f"https://www.alphavantage.co/query?function=TIME_SERIES_{timeSeries}&symbol={stockSymbol}&outputsize=compact&apikey={apiKey}&datatype=json"
@@ -116,12 +119,12 @@ def GetData(stockSymbol, apiKey, timeSeries, convertedBeginningDate, convertedEn
 
     
     #print("Data received from API:", limited_data)
-    GenerateChart(chartType, limited_data, convertedBeginningDate, convertedEndDate, stockSymbol)
+    GenerateChart(chartType, limited_data, convertedBeginningDate, convertedEndDate, stockSymbol, filename)
     
     return
 
 #generate the chart
-def GenerateChart(chartType, data, startDate, EndDate, stockSymbol):
+def GenerateChart(chartType, data, startDate, EndDate, stockSymbol, filename):
     dates = list(data.keys())[::-1]
     opens, highs, lows, closes = [], [], [], []
 
@@ -136,25 +139,29 @@ def GenerateChart(chartType, data, startDate, EndDate, stockSymbol):
             closes.append(float(values['4. close'])) 
 
     if chartType == "LINE":
-        line_chart = pygal.Line()
-        line_chart.title = '%s %s Chart from %s to %s' % (stockSymbol, chartType, startDate, EndDate)
-        line_chart.x_labels = dates
-        line_chart.add('Open', opens)
-        line_chart.add('High', highs)
-        line_chart.add('Low',  lows)
-        line_chart.add('Close', closes)
-        line_chart.render_in_browser()
+        chart = pygal.Line()
+        chart.title = '%s %s Chart from %s to %s' % (stockSymbol, chartType, startDate, EndDate)
+        chart.x_labels = dates
+        chart.add('Open', opens)
+        chart.add('High', highs)
+        chart.add('Low',  lows)
+        chart.add('Close', closes)
+        #line_chart.render_in_browser()
     elif chartType == "BAR":
-        bar_chart = pygal.Bar()
-        bar_chart.title = '%s %s Chart from %s to %s' % (stockSymbol, chartType, startDate, EndDate)
-        bar_chart.x_labels = dates
-        bar_chart.add('Open', opens)
-        bar_chart.add('High', highs)
-        bar_chart.add('Low',  lows)
-        bar_chart.add('Close', closes)
-        bar_chart.render_in_browser()
+        chart = pygal.Bar()
+        chart.title = '%s %s Chart from %s to %s' % (stockSymbol, chartType, startDate, EndDate)
+        chart.x_labels = dates
+        chart.add('Open', opens)
+        chart.add('High', highs)
+        chart.add('Low',  lows)
+        chart.add('Close', closes)
+        #bar_chart.render_in_browser
+
+    os.makedirs(os.path.dirname(filename), exist_ok=True)
 
     #elif chartType == "CANDLESTICK":
+
+    chart.render_to_file(filename)
         
 
         #ohlc_data = [(datetime.datetime.strptime(date, "%Y-%m-%d"), float(values['1. open']), float(values['2. high']), float(values['3. low']), float(values['4. close'])) for date, values in data.items()]
@@ -203,4 +210,6 @@ def ChoosingDates():
         else:
             return convertedBeginDate, convertedEndDate
 
-main()
+#app.run(host="0.0.0.0")
+
+   
