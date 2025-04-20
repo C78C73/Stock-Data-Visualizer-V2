@@ -1,5 +1,9 @@
-# Stock-Data-Visualizer-V2
-Stock Data Visualizer on the web
+# Stock-Data-Visualizer
+Stock Data Visualizer on the web, complete with graphs customized by user input.
 
-## To-Do
+## Scrum Team 1
+- Gage 
+- Amiya
+- Caleb
+- Spencer
 - 
